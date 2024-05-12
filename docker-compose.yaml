@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  country-service-database:
+    image: postgres:16.1
+    container_name: country-service-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: countries
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    logging:
+      options:
+        max-size: 10m
+        max-file: "5"
+    ports:
+      - "9432:5432"
+    volumes:
+      - country-service-data:/var/lib/postgresql/data
+  
+  country-service:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: country-service-app
+    depends_on:
+      - country-service-database
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@country-service-database:5432/countries
+      - SERVER_PORT=3000
+      - RUST_LOG=info
+    ports:
+      - "3000:3000"
+
+volumes:
+  country-service-data:

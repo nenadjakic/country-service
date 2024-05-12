@@ -1,28 +1,60 @@
-use std::env;
-
-use axum::{http::StatusCode, response::IntoResponse, routing::get, Json, Router};
+use axum::routing::get;
+use axum::Router;
 use dotenv::dotenv;
+use envconfig::Envconfig;
 use log::info;
-use serde_json::json;
-use tokio::signal::{self, unix::signal};
+use std::sync::Arc;
+use tokio::signal;
+use tokio::sync::Mutex;
+use tower_http::cors::CorsLayer;
+
+use crate::config::app_settings::AppSettings;
+use crate::config::app_state::AppState;
+use crate::controller::country_controller::{
+    find_all, find_by_alpha2_code, find_by_id, find_by_name,
+};
+use crate::controller::health_controller::status;
+use crate::util::{establish_connection, run_pending_migrations};
+
+mod config;
+mod controller;
+mod entity;
+mod repository;
+mod schema;
+mod service;
+mod util;
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-
     env_logger::init();
 
-    info!("🚀 Server starting...");
+    let app_settings = AppSettings::init_from_env().unwrap();
 
-    let app_host = env::var("APP_HOST").unwrap_or("0.0.0.0".to_string());
-    let app_port = env::var("APP_PORT").unwrap_or("80".to_string());
+    info!("🚀 Starting...");
 
-    let bind_address = app_host + ":" + &app_port;
+    let bind_address = String::from("0.0.0.0") + ":" + &app_settings.server_port().to_string();
+
+    let db_pool = establish_connection(app_settings.database_url().to_string());
+    info!("Database connection established.");
+
+    run_pending_migrations(db_pool.get().unwrap());
+    info!("Database migrations run.");
+
+    let app_state = Arc::new(Mutex::new(AppState::new(db_pool)));
 
     let app = Router::new()
-        .route("/api/health/status", get(status));
+        .route("/health/status", get(status))
+        .route("/countries/:country_id", get(find_by_id))
+        .route("/countries", get(find_all))
+        .route("/countries/by_code/:code", get(find_by_alpha2_code))
+        .route("/countries/by_name/:name", get(find_by_name))
+        .with_state(app_state)
+        .layer(CorsLayer::permissive());
 
     let listener = tokio::net::TcpListener::bind(bind_address).await.unwrap();
+
+    info!("Listening on port {}.", &app_settings.server_port());
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
@@ -32,28 +64,17 @@ async fn main() {
     info!("Server stopped.");
 }
 
-async fn status() -> impl IntoResponse {
-    let version = env!("CARGO_PKG_VERSION");
-
-    let response = json!({
-        "version": version,
-        "message": "Service is running...",
-        "status": "OK"
-    });
-    (StatusCode::OK, Json(response))
-}
-
 async fn shutdown_signal() {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
-            .expect("failed to install Ctrl+C handler");
+            .expect("Failed to install Ctrl+C handler");
     };
 
     #[cfg(unix)]
     let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
-            .expect("failed to install signal handler")
+            .expect("Failed to install signal handler")
             .recv()
             .await;
     };
@@ -66,5 +87,5 @@ async fn shutdown_signal() {
         _ = terminate => {},
     }
 
-    info!("signal received, starting graceful shutdown");
+    info!("Signal received, starting graceful shutdown");
 }
