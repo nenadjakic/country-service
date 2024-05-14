@@ -1,10 +1,10 @@
-use crate::schema::countries;
-
 use uuid::Uuid;
-use diesel::{Insertable, Queryable, Selectable};
+use diesel::{Queryable, Selectable};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Queryable, Selectable, Insertable)]
+use crate::schema::countries;
+
+#[derive(Serialize, Deserialize, Queryable, Selectable)]
 #[diesel(primary_key(id))]
 #[diesel(table_name = countries)]
 pub struct Country {

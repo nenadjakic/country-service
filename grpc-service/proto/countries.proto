@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package countries;
+
+
+service Countries {
+    rpc FindAll (CountryRequest) returns (CountriesReply);
+    rpc FindById (UuidRequest) returns(CountryReply);
+    rpc FindByAlpha2Code (StringRequest) returns (CountryReply);
+    rpc FindByName (StringRequest) returns (CountriesReply);
+}
+
+message CountryRequest {}
+message UuidRequest {
+    string value = 1;
+}
+
+message StringRequest {
+    string value = 1;
+}
+
+message CountryReply {
+    string id = 1;
+    string aplha2_code = 2;
+    string name = 3;
+}
+
+message CountriesReply {
+    repeated CountryReply countries = 1;
+}

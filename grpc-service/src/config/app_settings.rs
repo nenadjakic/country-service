@@ -5,7 +5,7 @@ pub struct AppSettings {
     #[envconfig(from = "DATABASE_URL")]
     database_url: String,
 
-    #[envconfig(from = "SERVER_PORT", default = "8080")]
+    #[envconfig(from = "GRPC_PORT", default = "50051")]
     server_port: u16,
 }
 

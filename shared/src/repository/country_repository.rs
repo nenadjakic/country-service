@@ -1,12 +1,12 @@
 use diesel::{r2d2::ConnectionManager, PgConnection};
 use diesel::prelude::*;
+use diesel::prelude::QueryDsl;
 use r2d2::Pool;
 use uuid::Uuid;
 
 use crate::entity::country::Country;
-use crate::schema::countries::dsl::countries;
+use crate::schema::countries::dsl::*;
 use crate::schema::countries::{alpha2_code, name};
-
 pub struct CountryRepository { 
     db_pool: Pool<ConnectionManager<PgConnection>>,
 }
@@ -17,7 +17,7 @@ impl CountryRepository {
     }
 
     pub fn find_by_id(&self, other_id: Uuid) -> Option<Country> {
-        let db_conn = &mut self.db_pool.get().unwrap();
+        let db_conn: &mut r2d2::PooledConnection<ConnectionManager<PgConnection>> = &mut self.db_pool.get().unwrap();
         
         countries
             .find(other_id)
@@ -29,7 +29,7 @@ impl CountryRepository {
         let db_conn = &mut self.db_pool.get().unwrap();
 
         countries
-            .filter(alpha2_code.eq(other_alpha2_code))
+            .filter(alpha2_code.eq(other_alpha2_code.to_uppercase()))
             .first::<Country>(db_conn)
             .ok()
     }
@@ -38,7 +38,7 @@ impl CountryRepository {
         let db_conn = &mut self.db_pool.get().unwrap();
 
         countries
-            .filter(name.like(other_name + "%"))
+            .filter(name.ilike(other_name + "%"))
             .load::<Country>(db_conn)
             .unwrap()
     }
