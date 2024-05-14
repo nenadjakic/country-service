@@ -16,6 +16,7 @@ This project is a **country-service** implemented in Rust programming language, 
 ## Technologies Used
 - Diesel ORM for database operations
 - Axum for REST operations
+- Tonic for gRPC operations
 
 ## Build and Run
 1. **Clone this repository:**
@@ -31,7 +32,9 @@ This project is a **country-service** implemented in Rust programming language, 
 4. **Build and run the project:**
 
    `cargo run -p country-rest-service`
-   or 
+   
+   or
+    
    `cargo run -p country-grpc-service`
 
 _Note: The program will automatically apply migrations on startup._
