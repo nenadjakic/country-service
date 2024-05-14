@@ -1,0 +1,23 @@
+[package]
+name = "country-grpc-service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+shared = { path = "../shared" }
+
+tokio = { version = "1.27.0", features = ["full"] }
+envconfig = "0.10.0"
+dotenv = { version = "0.15.0" }
+env_logger = { version = "0.10.0" }
+log = { version = "0.4.20" }
+tonic = "0.11.0"
+prost = "0.12.4"
+prost-types = "0.12.4"
+diesel = { version = "2.1.0", features = ["postgres", "uuid", "r2d2"] }
+uuid = { version = "1.8.0", features = ["serde", "v4"] }
+r2d2 = "0.8.10"
+diesel_migrations = "2.1.0"
+
+[build-dependencies]
+tonic-build = "0.11.0"
